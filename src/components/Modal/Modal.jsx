@@ -1,48 +1,50 @@
-import { Component } from 'react';
+import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import s from '../Modal/Modal.module.css'
+import { Loader } from 'components/Loader/Loader';
+import s from '../Modal/Modal.module.css';
 
-export class Modal extends Component {
-  onCloseEscape = e => {
-    if (e.code === 'Escape') {
-      this.props.closeModal();
-    }
-  };
+export const Modal = ({ currentImage: { alt, src }, closeModal }) => {
+  const [isLoaded, setIsLoaded] = useState(false);
+  useEffect(() => {
+    const onCloseEscape = ({ code }) => {
+      if (code === 'Escape') {
+        closeModal();
+      }
+    };
 
-  onCloseBackdrop = e => {
+    window.addEventListener('keydown', onCloseEscape);
+
+    return () => {
+      window.removeEventListener('keydown', onCloseEscape);
+    };
+  }, [closeModal]);
+
+  const onCloseBackdrop = e => {
     if (e.currentTarget === e.target) {
-      this.props.closeModal();
+      closeModal();
     }
   };
 
-  componentDidMount() {
-    window.addEventListener('keydown', this.onCloseEscape);
-    
-  }
+  const handleLoaded = () => {
+    setIsLoaded(true);
+  };
 
-  componentWillUnmount() {
-    window.removeEventListener('keydown', this.onCloseEscape);
-    
-  }
-
-  render() {
-    const {
-      currentImage: { alt, src },
-    } = this.props;
-
-    const { onCloseBackdrop } = this;
-
-    return (
-      <div className={s.overlay} onClick={onCloseBackdrop}>
-        <div className={s.modal}>
-          <img src={src} alt={alt} />
-        </div>
+  return (
+    <div className={s.overlay} onClick={onCloseBackdrop}>
+      <div className={s.modal}>
+        <img
+          src={src}
+          alt={alt}
+          onLoad={handleLoaded}
+          style={{ display: isLoaded ? 'block' : 'none' }}
+        />
+        {!isLoaded && <Loader />}
       </div>
-    );
-  }
-}
+    </div>
+  );
+};
 
 Modal.propTypes = {
-   currentImage: PropTypes.object,
-   closeModal: PropTypes.func.isRequired,
-}
+  currentImage: PropTypes.object,
+  closeModal: PropTypes.func.isRequired,
+};

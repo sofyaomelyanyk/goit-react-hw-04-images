@@ -2,7 +2,7 @@ import axios from 'axios';
 
 axios.defaults.baseURL = 'https://pixabay.com/api/';
 
-export const picturesRequest = (picture, page, perPage) => {
+export const picturesRequest = (picture, page) => {
   const config = {
     params: {
       q: picture,
@@ -10,7 +10,7 @@ export const picturesRequest = (picture, page, perPage) => {
       page,
       image_type: 'photo',
       orientation: 'horizontal',
-      per_page: perPage,
+      per_page: 12,
     },
   };
 

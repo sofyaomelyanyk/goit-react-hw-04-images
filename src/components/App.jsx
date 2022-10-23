@@ -1,4 +1,4 @@
-import { Component } from 'react';
+import { useState, useEffect } from 'react';
 import { ToastContainer } from 'react-toastify';
 import s from '../components/App.module.css';
 import 'react-toastify/dist/ReactToastify.css';
@@ -11,32 +11,29 @@ import { Modal } from './Modal/Modal';
 import { picturesRequest } from './services/api';
 import { Button } from './Button/Button';
 
-export class App extends Component {
-  state = {
-    gallery: [],
-    picture: '',
-    page: 1,
-    perPage: 12,
-    isLoading: false,
-    error: null,
-    currentImage: null,
-    isShow: false,
-    totalHits: null,
-  };
+export const App = () => {
+  const [gallery, setGallery] = useState([]);
+  const [picture, setPicture] = useState('');
+  const [page, setPage] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [currentImage, setCurrentImage] = useState(null);
 
-  componentDidUpdate(_, prevState) {
-    const { picture, page, perPage } = this.state;
-    if (prevState.picture !== picture || prevState.page !== page) {
-      this.fetchPictures(picture, page, perPage);
+  const [totalHits, setTotalHits] = useState(null);
+
+  useEffect(() => {
+    if (picture) {
+      fetchPictures(picture, page);
     }
-  }
+  }, [picture, page]);
 
-  fetchPictures = async (picture, page, perPage) => {
+  const fetchPictures = async (picture, page) => {
     const message = 'Nothing found for your request!';
 
     try {
-      this.setState({ isLoading: true, isShow: false, error: null });
-      const res = await picturesRequest(picture, page, perPage);
+      setIsLoading(true);
+      setError(null);
+      const res = await picturesRequest(picture, page);
 
       console.log(res);
 
@@ -44,59 +41,49 @@ export class App extends Component {
         throw new Error(message);
       }
 
-      this.setState(prevState => ({
-        gallery: [...prevState.gallery, ...res.data.hits],
-        isShow: true,
-        totalHits: res.data.totalHits,
-      }));
+      setGallery(prevState => [...prevState, ...res.data.hits]);
+      setTotalHits(res.data.totalHits);
     } catch {
-      this.setState({ error: message, isShow: false });
+      setError(message);
     } finally {
-      this.setState({ isLoading: false });
+      setIsLoading(false);
     }
   };
 
-  addName = picture => {
-    this.setState({ picture, gallery: [], page: 1 });
+  const addName = picture => {
+    setPicture(picture);
+    setGallery([]);
+    setPage(1);
   };
 
-  loadMore = () => {
-    this.setState(prevState => ({ page: prevState.page + 1 }));
+  const loadMore = () => {
+    setPage(prevState => prevState + 1);
   };
 
-  openModal = data => {
-    this.setState({ currentImage: data });
+  const openModal = data => {
+    setCurrentImage(data);
   };
 
-  closeModal = () => {
-    this.setState({ currentImage: null });
+  const closeModal = () => {
+    setCurrentImage(null);
   };
 
-  totalPages = () => {
-    const total = Math.floor(this.state.totalHits / this.state.page);
-    if (this.state.page < total) {
-      this.setState({ isShow: false });
-    }
-  };
+  const perPage = 12;
+  const totalPages = () => Math.floor(totalHits / perPage);
 
-  render() {
-    const { addName, loadMore, openModal, closeModal } = this;
-    const { isLoading, gallery, currentImage, error, isShow } = this.state;
-    return (
-      <div className={s.app}>
-        <Searchbar addName={addName} />
-        {isLoading && <Loader />}
-        {error && <h2>{error}</h2>}
-        <ToastContainer autoClose={3000} theme="dark" />
-        <ImageGallery gallery={gallery} openModal={openModal} />
-        {isShow && <Button text="Load more" onClick={loadMore} />}
-        {currentImage && (
-          <Modal currentImage={currentImage} closeModal={closeModal} />
-        )}
-      </div>
-    );
-  }
-}
-
-
-// 123
+  return (
+    <div className={s.app}>
+      <Searchbar addName={addName} />
+      {isLoading && <Loader />}
+      {error && <h2>{error}</h2>}
+      <ToastContainer autoClose={3000} theme="dark" />
+      <ImageGallery gallery={gallery} openModal={openModal} />
+      {totalHits && page < totalPages() && (
+        <Button text="Load more" onClick={loadMore} />
+      )}
+      {currentImage && (
+        <Modal currentImage={currentImage} closeModal={closeModal} />
+      )}
+    </div>
+  );
+};
